@@ -44,9 +44,9 @@ class MigrationBuilder
 
     public function generateMigrationString(){
         $data = $this->buildFromDB();
-        $result = '<?php'.PHP_EOL.'use Bitrix\DataMover\Migration;'
+        $result = '<?php'.PHP_EOL.'use Bitrix\Migration\EntityManager;'
             .PHP_EOL.PHP_EOL
-            .'$migration = new Migration()'.PHP_EOL;
+            .'$manager = new EntityManager();'.PHP_EOL;
 
         foreach ($data as $dataKey => $dataItem){
             $result.= $this->buildData($dataKey, $dataItem);
@@ -82,26 +82,26 @@ class MigrationBuilder
     }
 
     protected function buildHighloadsData($dataString){
-        return "\$migration->addHighloads({$dataString});";
+        return "\$manager->addHighloads({$dataString});";
     }
 
     protected function buildUserFieldsData($dataString){
-        return "\$migration->addUserFields({$dataString});";
+        return "\$manager->addUserFields({$dataString});";
     }
 
     protected function buildUserFieldsLangData($dataString){
-        return "\$migration->addUserFieldsLangs({$dataString});";
+        return "\$manager->addUserFieldsLangs({$dataString});";
     }
 
     protected function buildUserFieldsEnumsData($dataString){
-        return "\$migration->addUerFieldsEnums({$dataString});";
+        return "\$manager->addUerFieldsEnums({$dataString});";
     }
 
     protected function buildIblockPropertiesData($dataString){
-        return "\$migration->addIblockProperties({$dataString});";
+        return "\$manager->addIblockProperties({$dataString});";
     }
 
     protected function buildIblockPropertiesEnumsData($dataString){
-        return "\$migration->addIblockPropertiesEnums({$dataString});";
+        return "\$manager->addIblockPropertiesEnums({$dataString});";
     }
 }

@@ -6,7 +6,7 @@ use Bitrix\Highloadblock\HighloadBlockTable;
 use Bitrix\Iblock\PropertyEnumerationTable;
 use Bitrix\Main\Entity\AddResult;
 use Bitrix\Main\Loader;
-use const Bitrix\Main\UserFieldLangTable;
+use Bitrix\Main\UserFieldLangTable;
 
 class EntityManager
 {
