@@ -4,6 +4,7 @@ namespace Bitrix\Migration;
 
 use Bitrix\Highloadblock\HighloadBlockTable;
 use Bitrix\Main\Loader;
+use Bitrix\Main\Type\Date;
 use Bitrix\Main\UserFieldLangTable;
 
 class MigrationBuilder
@@ -50,21 +51,25 @@ class MigrationBuilder
     }
 
     protected function migrateTables($tables){
-        $sql = '';
+        $tablesSql = [];
         $connection = \Bitrix\Main\Application::getConnection();
         foreach ($tables as $table){
+            $sql = '';
             $result = $connection->query("SELECT * FROM {$table}");
             $sql.= "INSERT INTO {$table} VALUES ";
+            $valuesArray = [];
             while($item = $result->fetch()){
                 $values = implode(',', array_map(function($value){
-                    return is_string($value) ? "\"{$value}\"" : $value;
+                    return is_null($value) ? 'null' : ((is_string($value) || ($value instanceof Date)) ? "\"{$value}\"" : $value);
                 }, $item));
 
-                $sql.= "({$values}),".PHP_EOL;
+                $valuesArray[] = "({$values})";
             }
-            $sql.= ';';
+            $sql.= implode(','.PHP_EOL, $valuesArray).';';
+
+            $tablesSql[] = $sql;
         }
-        return $sql;
+        return $tablesSql;
     }
 
     public function generateMigrationString()
@@ -141,6 +146,6 @@ class MigrationBuilder
     }
 
     protected function buildTablesData($dataString){
-        return "\$connection = \Bitrix\Main\Application::getConnection();\$connection->query({$dataString});";
+        return "\$manager->rawSql(\n{$dataString}\n);";
     }
 }

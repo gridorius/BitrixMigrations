@@ -18,7 +18,7 @@ if(!$migrationPath){
 
 
 $GLOBALS['SKIP_MIGRATION'] = key_exists('s', $options) ? (is_array($options['s']) ? $options['s'] : [$options['s']]) : [];
-$GLOBALS['CONCRETE_MIGRATIONS'] = key_exists('c', $options) ? (is_array($options['c']) ? $options['c'] : [$options['c']]) : [];
+$GLOBALS['CONCRETE_MIGRATIONS'] = key_exists('c', $options) ? (is_array($options['c']) ? $options['c'] : [$options['c']]) : null;
 $_SERVER['DOCUMENT_ROOT'] = $bitrixDir;
 
 define("NO_KEEP_STATISTIC", true);

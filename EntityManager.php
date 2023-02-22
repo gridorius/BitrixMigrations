@@ -4,6 +4,7 @@ namespace Bitrix\Migration;
 
 use Bitrix\Highloadblock\HighloadBlockTable;
 use Bitrix\Iblock\PropertyEnumerationTable;
+use Bitrix\Main\Application;
 use Bitrix\Main\Entity\AddResult;
 use Bitrix\Main\Loader;
 use Bitrix\Main\UserFieldLangTable;
@@ -138,6 +139,23 @@ class EntityManager
         foreach ($data as $key => $fields) {
             $logger->showProgress($key + 1, $total);
             $this->addIblockProperty($fields);
+        }
+        $logger->close();
+    }
+
+    public function rawSql($data){
+        if ($this->checkSkipSection('rawsql')) {
+            return;
+        }
+        $logger = new \MigrationLogger("Migrate tables");
+        $connection = Application::getConnection();
+        foreach ($data as $key => $query){
+            try {
+                $logger->showProgress($key + 1, count($data));
+                $connection->query($query);
+            }catch (\Exception $exception){
+                $logger->showError($exception->getMessage());
+            }
         }
         $logger->close();
     }
