@@ -17,4 +17,12 @@ define("NOT_CHECK_PERMISSIONS", true);
 define("BX_BUFFER_USED", true);
 require_once $bitrixDir."/bitrix/modules/main/include/prolog_before.php";
 require __DIR__.'/EntityManager.php';
-require $migrationPath;
+
+$connection = \Bitrix\Main\Application::getConnection();
+try {
+    $connection->startTransaction();
+    require $migrationPath;
+    $connection->commitTransaction();
+}catch (Exception $ex){
+    $connection->rollbackTransaction();
+}
