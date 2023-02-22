@@ -24,6 +24,13 @@ class EntityManager
         $this->iblockPropertyEnumsManager = new \CIBlockPropertyEnum();
     }
 
+    protected function checkSkipSection($sectionName)
+    {
+        return
+            (is_array($GLOBALS['CONCRETE_MIGRATIONS']) && !in_array($sectionName, $GLOBALS['CONCRETE_MIGRATIONS'])) ||
+            (is_array($GLOBALS['SKIP_MIGRATION']) && in_array($sectionName, $GLOBALS['SKIP_MIGRATION']));
+    }
+
     public function AddHighload($fields): AddResult
     {
         return HighloadBlockTable::add($fields);
@@ -31,9 +38,16 @@ class EntityManager
 
     public function addHighloads($data)
     {
-        foreach ($data as $fields) {
+        if ($this->checkSkipSection('highloads')) {
+            return;
+        }
+        $logger = new \MigrationLogger("Migrate highloads");
+        $total = count($data);
+        foreach ($data as $key => $fields) {
+            $logger->showProgress($key + 1, $total);
             $this->AddHighload($fields);
         }
+        $logger->close();
     }
 
     public function addUserField($fields): int
@@ -43,9 +57,16 @@ class EntityManager
 
     public function addUserFields($data)
     {
-        foreach ($data as $fields) {
+        if ($this->checkSkipSection('userfields')) {
+            return;
+        }
+        $logger = new \MigrationLogger("Migrate user-fields");
+        $total = count($data);
+        foreach ($data as $key => $fields) {
+            $logger->showProgress($key + 1, $total);
             $this->addUserField($fields);
         }
+        $logger->close();
     }
 
     public function addUserFieldLang($fields)
@@ -53,45 +74,85 @@ class EntityManager
         return UserFieldLangTable::add($fields);
     }
 
-    public function addUserFieldsLangs($data){
-        foreach ($data as $fields) {
-            $this->addUserFieldLang($fields);
+    public function addUserFieldsLangs($data)
+    {
+        if ($this->checkSkipSection('userfield-lang')) {
+            return;
         }
+        $logger = new \MigrationLogger("Migrate user-field lang");
+        $total = count($data);
+        foreach ($data as $key => $fields) {
+            try {
+                $this->addUserFieldLang($fields);
+                $logger->showProgress($key + 1, $total);
+            } catch (\Exception $exception) {
+                $logger->showError($exception->getMessage());
+            }
+        }
+        $logger->close();
     }
 
-    public function addUserFieldEnums($fieldId, $values){
+    public function addUserFieldEnums($fieldId, $values)
+    {
         return $this->ufEnumsManager->SetEnumValues($fieldId, $values);
     }
 
-    public function addUerFieldsEnums($data){
+    public function addUerFieldsEnums($data)
+    {
+        if ($this->checkSkipSection('userfield-enums')) {
+            return;
+        }
         $fields = [];
 
-        foreach ($data as $row){
+        foreach ($data as $row) {
             $fields[$row['USER_FIELD_ID']][$row['ID']] = $row;
         }
 
-        foreach ($fields as $fieldId => $values){
+        $logger = new \MigrationLogger("Migrate user-field enums");
+        $total = count($fields);
+        $num = 1;
+        foreach ($fields as $fieldId => $values) {
+            $logger->showProgress($num++, $total);
             $this->addUserFieldEnums($fieldId, $values);
         }
+        $logger->close();
     }
 
-    public function addIblockProperty($fields){
+    public function addIblockProperty($fields)
+    {
         return $this->iblockPropertyManager->Add($fields);
     }
 
-    public function addIblockPropertyEmum($fields){
+    public function addIblockPropertyEmum($fields)
+    {
         return PropertyEnumerationTable::add($fields);
     }
 
-    public function addIblockProperties($data){
-        foreach ($data as $fields) {
+    public function addIblockProperties($data)
+    {
+        if ($this->checkSkipSection('iblock-properties')) {
+            return;
+        }
+        $logger = new \MigrationLogger("Migrate iblock properies");
+        $total = count($data);
+        foreach ($data as $key => $fields) {
+            $logger->showProgress($key + 1, $total);
             $this->addIblockProperty($fields);
         }
+        $logger->close();
     }
 
-    public function addIblockPropertiesEnums($data){
-        foreach ($data as $fields) {
+    public function addIblockPropertiesEnums($data)
+    {
+        if ($this->checkSkipSection('iblock-property-enums')) {
+            return;
+        }
+        $logger = new \MigrationLogger("Migrate iblock property enums");
+        $total = count($data);
+        foreach ($data as $key => $fields) {
+            $logger->showProgress($key + 1, $total);
             $this->addIblockPropertyEmum($fields);
         }
+        $logger->close();
     }
 }

@@ -1,5 +1,9 @@
 <?php
-$bitrixDir = realpath($argv[1]);
+$options = getopt('b:o:t::');
+$bitrixDir = realpath($options['b']);
+$saveTo = $options['o'];
+$GLOBALS['MIGRATE_TABLES'] = key_exists('t', $options) ? (is_array($options['t']) ? $options['t'] : [$options['t']]) : [];
+
 if(!$bitrixDir){
     throw new Exception("Bitrix not found in {$argv[1]}");
 }
@@ -13,7 +17,6 @@ define("BX_BUFFER_USED", true);
 require_once $bitrixDir."/bitrix/modules/main/include/prolog_before.php";
 require __DIR__.'/MigrationBuilder.php';
 
-$saveTo = $argv[2];
 
 $builder = new \Bitrix\Migration\MigrationBuilder();
 $builder->saveToFile($saveTo);

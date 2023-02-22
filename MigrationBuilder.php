@@ -24,7 +24,7 @@ class MigrationBuilder
         $iblockProperties = $this->collectResultValues(\CIBlockProperty::GetList());
         $iblockPropertiesEnums = $this->collectResultValues(\CIBlockPropertyEnum::GetList());
 
-        return [
+        $migrateResult = [
             'Highloads' => $highloads,
             'UserFields' => $userFields,
             'UserFieldsLang' => $userFieldsLang,
@@ -32,45 +32,74 @@ class MigrationBuilder
             'IblockProperties' => $iblockProperties,
             'IblockPropertiesEnums' => $iblockPropertiesEnums,
         ];
+
+        if (!empty($GLOBALS['MIGRATE_TABLES'])) {
+            $migrateResult['Tables'] = $this->migrateTables($GLOBALS['MIGRATE_TABLES']);
+        }
+
+        return $migrateResult;
     }
 
-    protected function collectResultValues($result){
+    protected function collectResultValues($result)
+    {
         $items = [];
-        while($item = $result->Fetch()){
+        while ($item = $result->Fetch()) {
             $items[] = $item;
         }
         return $items;
     }
 
-    public function generateMigrationString(){
-        $data = $this->buildFromDB();
-        $result = '<?php'.PHP_EOL.'use Bitrix\Migration\EntityManager;'
-            .PHP_EOL.PHP_EOL
-            .'$manager = new EntityManager();'.PHP_EOL;
+    protected function migrateTables($tables){
+        $sql = '';
+        $connection = \Bitrix\Main\Application::getConnection();
+        foreach ($tables as $table){
+            $result = $connection->query("SELECT * FROM {$table}");
+            $sql.= "INSERT INTO {$table} VALUES ";
+            while($item = $result->fetch()){
+                $values = implode(',', array_map(function($value){
+                    return is_string($value) ? "\"{$value}\"" : $value;
+                }, $item));
 
-        foreach ($data as $dataKey => $dataItem){
-            $result.= $this->buildData($dataKey, $dataItem);
+                $sql.= "({$values}),".PHP_EOL;
+            }
+            $sql.= ';';
+        }
+        return $sql;
+    }
+
+    public function generateMigrationString()
+    {
+        $data = $this->buildFromDB();
+        $result = '<?php' . PHP_EOL . 'use Bitrix\Migration\EntityManager;'
+            . PHP_EOL . PHP_EOL
+            . '$manager = new EntityManager();' . PHP_EOL;
+
+        foreach ($data as $dataKey => $dataItem) {
+            $result .= $this->buildData($dataKey, $dataItem);
         }
 
         return $result;
     }
 
-    public function saveToFile($path){
+    public function saveToFile($path)
+    {
         file_put_contents($path, $this->generateMigrationString());
     }
 
-    protected function buildData($dataKey, $data){
-        $methodName = 'build'.$dataKey.'Data';
-        if(method_exists($this, $methodName)){
+    protected function buildData($dataKey, $data)
+    {
+        $methodName = 'build' . $dataKey . 'Data';
+        if (method_exists($this, $methodName)) {
             return call_user_func(
                     [$this, $methodName],
                     $this->makeDataString($data)
-                ).PHP_EOL.PHP_EOL;
+                ) . PHP_EOL . PHP_EOL;
         }
         return '';
     }
 
-    protected function makeDataString($data){
+    protected function makeDataString($data)
+    {
         $export = var_export($data, true);
         $patterns = [
             "/array \(/" => '[',
@@ -81,27 +110,37 @@ class MigrationBuilder
         return preg_replace(array_keys($patterns), array_values($patterns), $export);
     }
 
-    protected function buildHighloadsData($dataString){
+    protected function buildHighloadsData($dataString)
+    {
         return "\$manager->addHighloads({$dataString});";
     }
 
-    protected function buildUserFieldsData($dataString){
+    protected function buildUserFieldsData($dataString)
+    {
         return "\$manager->addUserFields({$dataString});";
     }
 
-    protected function buildUserFieldsLangData($dataString){
+    protected function buildUserFieldsLangData($dataString)
+    {
         return "\$manager->addUserFieldsLangs({$dataString});";
     }
 
-    protected function buildUserFieldsEnumsData($dataString){
+    protected function buildUserFieldsEnumsData($dataString)
+    {
         return "\$manager->addUerFieldsEnums({$dataString});";
     }
 
-    protected function buildIblockPropertiesData($dataString){
+    protected function buildIblockPropertiesData($dataString)
+    {
         return "\$manager->addIblockProperties({$dataString});";
     }
 
-    protected function buildIblockPropertiesEnumsData($dataString){
+    protected function buildIblockPropertiesEnumsData($dataString)
+    {
         return "\$manager->addIblockPropertiesEnums({$dataString});";
+    }
+
+    protected function buildTablesData($dataString){
+        return "\$connection = \Bitrix\Main\Application::getConnection();\$connection->query({$dataString});";
     }
 }
